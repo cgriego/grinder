@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+
+# Copyright (c) 2008 Chris Griego
+# 
+# Grinder is freely distributable under the terms of an MIT-style license.
+# For details, see http://www.opensource.org/licenses/mit-license.php
+
+require 'rubygems'
+require 'mime/types'
+
+file      = ARGV[0]
+file_name = File.basename(file, File.extname(file))
+type      = MIME::Types.type_for(file)[0].sub_type.to_sym
+files     = [{ :file => file, :method => 'original' }]
+methods   = ['original']
+
+if type == :gif
+  methods << 'pngout'
+  `pngout #{file} #{file_name}-pngout.png`
+  files << { :file => "#{file_name}-pngout.png", :method => methods.last }
+  
+  methods << 'pngout+optipng'
+  `cp #{file_name}-pngout.png #{file_name}-pngout-optipng.png`
+  `optipng -o7 #{file_name}-pngout-optipng.png`
+  files << { :file => "#{file_name}-pngout-optipng.png", :method => methods.last }
+  
+  methods << 'optipng'
+  `cp #{file} #{file_name}-optipng.gif`
+  `optipng -o7 #{file_name}-optipng.gif`
+  `rm #{file_name}-optipng.gif`
+  files << { :file => "#{file_name}-optipng.png", :method => methods.last }
+  
+  methods << 'optipng+pngout'
+  `pngout #{file_name}-optipng.png #{file_name}-optipng-pngout.png`
+  files << { :file => "#{file_name}-optipng-pngout.png", :method => methods.last }
+elsif type == :png
+  methods << 'pngout'
+  `pngout #{file} #{file_name}-pngout.png`
+  files << { :file => "#{file_name}-pngout.png", :method => methods.last }
+  
+  methods << 'pngout+optipng'
+  `cp #{file_name}-pngout.png #{file_name}-pngout-optipng.png`
+  `optipng -o7 #{file_name}-pngout-optipng.png`
+  files << { :file => "#{file_name}-pngout-optipng.png", :method => methods.last }
+  
+  methods << 'optipng'
+  `cp #{file} #{file_name}-optipng.png`
+  `optipng -o7 #{file_name}-optipng.png`
+  files << { :file => "#{file_name}-optipng.png", :method => methods.last }
+  
+  methods << 'optipng+pngout'
+  `pngout #{file_name}-optipng.png #{file_name}-optipng-pngout.png`
+  files << { :file => "#{file_name}-optipng-pngout.png", :method => methods.last }
+end
+
+files.map! {|f| f[:size] = File.size(f[:file]); f }
+
+files.sort!   {|a,b| a[:size] <=> b[:size] }
+
+digits = files.last[:size].to_s.length
+files.each {|f| puts "#{f[:size].to_s.rjust(digits)} #{f[:method]}" }
+
+new_file = files[0]
+`cp #{new_file[:file]} #{file_name + '-new' + File.extname(new_file[:file])}`
+files.each {|f| `rm #{f[:file]}`}
+`mv #{file_name + '-new' + File.extname(new_file[:file])} #{file_name + File.extname(new_file[:file])}`
+puts "#{file_name + File.extname(new_file[:file])}"
