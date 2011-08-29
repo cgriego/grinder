@@ -6,6 +6,10 @@ $ grind image.png
 
 h2. Dependencies
 
+You must have the mime-types gem installed.
+
+$ sudo gem install mime-types
+
 You must have optipng and pngout in your PATH. If you're on a Mac, you can install both with Homebrew.
 
 $ brew install optipng
